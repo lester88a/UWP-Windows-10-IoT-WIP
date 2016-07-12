@@ -75,12 +75,12 @@ namespace WIP2UWP
             }
             //set progress ring Visible
             MyProgressRing.Visibility = Visibility.Visible;
+            
             //load the method again to loop the method forever
             await GetPD();
         }
 
-
-
+        
         //get json string of table repair
         private static async Task<ObservableCollection<Repair>> GetJsonRepair()
         {
@@ -101,7 +101,8 @@ namespace WIP2UWP
             MyProgressRing.Visibility = Visibility.Visible;
             //clear table of prority devices before loaded
             Repairs.Clear();
-
+            //set current time
+            DigitalClockTextBlock.Text = DateTime.Now.ToString("yyyy-MM-dd  HH:mm");
             //set total rows and pages
             totalRows = GetTotalRowsPD();
             PDTotalRowsTextBlock.Text = "Total: " + totalRows;
@@ -110,15 +111,15 @@ namespace WIP2UWP
             //get data from json
             //ObservableCollection<Repair> items = await GetJsonRepair();
             //using linq query to get priority devices for * manufacturer
-            var quesrySamsungPriority = (from i in items
-                                         where i.Manufacturer.Contains("SAMSUNG") && i.Warranty == true &&
+            var quesryPriority = (from i in items
+                                         where i.Manufacturer==("LG") && i.Warranty == true &&
                                          (i.Status == "R" || i.Status == "A" || i.Status == "J")
                                          orderby i.LastTechnician ascending, i.RefNumber ascending, i.AGING descending
                                          select i).Skip(skip).Take(take);
             /*---------------------------------------------------
              * This foreach loop is used for get all queried data
              * --------------------------------------------------*/
-            foreach (var item in quesrySamsungPriority)
+            foreach (var item in quesryPriority)
             {
                 Repairs.Add(new Repair
                 {
@@ -160,13 +161,13 @@ namespace WIP2UWP
             //get json string
             //ObservableCollection<Repair> items = await GetJsonRepair();
             //count total rows for prority devices
-            var prorityDeviecsRowsCount = (from i in items where i.Manufacturer.Contains("SAMSUNG") && i.Warranty==true && (i.Status == "R" || i.Status == "A" || i.Status == "J") select i).Count();
+            var prorityDeviecsRowsCount = (from i in items where i.Manufacturer==("LG") && i.Warranty==true && (i.Status == "R" || i.Status == "A" || i.Status == "J") select i).Count();
             totalRows = Convert.ToInt32(prorityDeviecsRowsCount);
 
             return totalRows;
         }
 
-
+        //convert the date funtion
         private string ConvertDate(string dateString)
         {
             //DateTime date = DateTime.ParseExact(dateString, "MMM dd", null);
@@ -177,9 +178,6 @@ namespace WIP2UWP
             return dtnew.ToString();
         }
 
-        private void GetPDDataButton_Click(object sender, RoutedEventArgs e)
-        {
-            //GetPriorityDevices();
-        }
+        
     }
 }
