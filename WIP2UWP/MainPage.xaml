@@ -67,7 +67,7 @@
                         </StackPanel>
                         <StackPanel Grid.Row="1" Margin="0,40,0,0"> <!--BackOrder Left Side-->
                             <StackPanel Orientation="Vertical">
-                                <GridView Name="BackOrderGridView" ItemsSource="{x:Bind Repairs}">
+                                <GridView Name="BackOrderGridView" ItemsSource="{x:Bind BackOrders}">
                                     <GridView.ItemContainerStyle>
                                         <Style TargetType="GridViewItem">
                                             <Setter Property="Margin" Value="0,2.5,0,2.5"/>
@@ -126,7 +126,7 @@
                                     </Grid>
                                 </StackPanel>
                                 <StackPanel Orientation="Vertical">
-                                    <GridView Name="TechOutputGridView" ItemsSource="{x:Bind Repairs}">
+                                    <GridView Name="TechOutputGridView" ItemsSource="{x:Bind BackOrders}">
                                         <GridView.ItemContainerStyle>
                                             <Style TargetType="GridViewItem">
                                                 <Setter Property="Margin" Value="0,2.5,0,2.5"/>
@@ -161,7 +161,16 @@
                                 </StackPanel>
                             </StackPanel>
                             <Border Grid.Row="1" Height="200" Width="200"><!--Image Side-->
-                                <Image Name="ManufactureImage" Source="Assets/StoreLogo.png"/>
+                                <Grid>
+                                    <Image Name="ManufactureImage" Source="Assets/StoreLogo.png"/>
+                                    <ProgressRing Name="MyProgressRing"
+                                                  Margin="0,0,0,0" 
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Width="60" 
+                                                  Height="60" Foreground="Red"
+                                                  IsActive="True" />
+                                </Grid>
                             </Border>
                         </Grid>
                     </Grid>
@@ -248,15 +257,6 @@
                         </DataTemplate>
                     </GridView.ItemTemplate>
                 </GridView>
-                <StackPanel>
-                    <ProgressRing Name="MyProgressRing"
-                                  Margin="0,0,0,0" 
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  Width="50" 
-                                  Height="50" Foreground="Red"
-                                  IsActive="True" />
-                </StackPanel>
             </StackPanel>
         </StackPanel>
 
