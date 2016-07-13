@@ -21,7 +21,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <StackPanel>
+        <StackPanel><!--Left Side-->
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -29,18 +29,147 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <TextBlock Text="Left side" Foreground="White"/>
-                <StackPanel Grid.Row="1">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Back Order Summary" Foreground="White" FontSize="18"/>
-                        <TextBlock Name="BKPageTextBlock" Text="Page: 0/0" Margin="50,0,0,0" Foreground="White" FontSize="18"/>
-                        <TextBlock Name="BKTotalRowsTextBlock" Text="Total: 0" Margin="50,0,0,0" Foreground="White" FontSize="18"/>
-                    </StackPanel>
-                    
+                <StackPanel Grid.Row="1"><!--BackOrderRow and TechOutputRow-->
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.5*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <RelativePanel Grid.ColumnSpan="2"> <!--BackOrder Summary-->
+                            <TextBlock x:Name="BKHeaderTitle" Text="Back Order Summary" FontSize="18" Foreground="White" RelativePanel.AlignLeftWithPanel="True"/>
+                            <TextBlock Name="BKPageTextBlock" Text="Page: 0/0" FontSize="18" Margin="50,0,0,0" Foreground="White" RelativePanel.RightOf="BKHeaderTitle"/>
+                            <TextBlock Name="BKTotalRowsTextBlock" Text="Total: 0" FontSize="18" Margin="50,0,0,0" Foreground="White" RelativePanel.RightOf="BKPageTextBlock"/>
+                            <TextBlock Text="Tech Daily Repair Output" Foreground="White" FontSize="18" Margin="0,0,0,0" RelativePanel.LeftOf="TechTotalOutputTextBlock"/>
+                            <TextBlock Name="TechTotalOutputTextBlock" Text="Total: 0" FontSize="18" Margin="70,0,20,0" Foreground="White" RelativePanel.AlignRightWithPanel="True"/>
+                        </RelativePanel>
+                        <StackPanel Grid.Row="1"><!--BackOrder Header-->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.3*"/>
+                                    <ColumnDefinition Width="0.7*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel  Grid.Column="0" BorderThickness="1" BorderBrush="White">
+                                    <TextBlock Text="Ref Number" Style="{StaticResource NormalTextFont}" Foreground="White"/>
+                                </StackPanel>
+                                <StackPanel  Grid.Column="1" BorderThickness="1" BorderBrush="White">
+                                    <TextBlock Text="Aging" Style="{StaticResource NormalTextFont}" Foreground="White"/>
+                                </StackPanel>
+                                <StackPanel  Grid.Column="2" BorderThickness="1" BorderBrush="White">
+                                    <TextBlock Text="Technician" Style="{StaticResource NormalTextFont}" Foreground="White"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Margin="0,40,0,0"> <!--BackOrder Left Side-->
+                            <StackPanel Orientation="Vertical">
+                                <GridView Name="BackOrderGridView" ItemsSource="{x:Bind Repairs}">
+                                    <GridView.ItemContainerStyle>
+                                        <Style TargetType="GridViewItem">
+                                            <Setter Property="Margin" Value="0,2.5,0,2.5"/>
+                                            <Setter Property="Padding" Value="0,0,0,0"/>
+                                            <Setter Property="MinWidth" Value="0" />
+                                            <Setter Property="MinHeight" Value="0" />
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="VerticalAlignment" Value="Stretch"/>
+                                        </Style>
+                                    </GridView.ItemContainerStyle>
+                                    <GridView.ItemTemplate>
+                                        <DataTemplate x:DataType="data:Repair">
+                                            <StackPanel>
+                                                <Grid Width="550">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="1.3*"/>
+                                                        <ColumnDefinition Width="0.7*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Margin="0,0,0,0" Grid.Column="0" >
+                                                        <TextBlock Name="BKRefTextBlock" Text="{Binding RefNumber}" Foreground="White" Style="{StaticResource NormalTextFont}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Margin="0,0,0,0" Grid.Column="1" >
+                                                        <TextBlock x:Name="BKAgingTextBlock" Text="{Binding AGING}" Foreground="White" Style="{StaticResource NormalTextFont}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Margin="0,0,0,0" Grid.Column="2" >
+                                                        <TextBlock x:Name="BKTechnicianTextBlock" Text="{Binding LastTechnician}" Foreground="White" Style="{StaticResource NormalTextFont}"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridView.ItemTemplate>
+                                </GridView>
+                            </StackPanel>
+                        </StackPanel>
+                        <Grid Grid.Row="1" Grid.Column="1" Margin="10,0,10,0"><!--TechOutput and Image Right Side-->
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel><!--TechOutput Side-->
+                                <StackPanel><!--BackOrder Header-->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="1.3*"/>
+                                            <ColumnDefinition Width="0.7*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel  Grid.Column="0" BorderThickness="1" BorderBrush="White">
+                                            <TextBlock Text="Technician" Style="{StaticResource NormalTextFont}" Foreground="White"/>
+                                        </StackPanel>
+                                        <StackPanel  Grid.Column="1" BorderThickness="1" BorderBrush="White">
+                                            <TextBlock Text="Total" Style="{StaticResource NormalTextFont}" Foreground="White"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                                <StackPanel Orientation="Vertical">
+                                    <GridView Name="TechOutputGridView" ItemsSource="{x:Bind Repairs}">
+                                        <GridView.ItemContainerStyle>
+                                            <Style TargetType="GridViewItem">
+                                                <Setter Property="Margin" Value="0,2.5,0,2.5"/>
+                                                <Setter Property="Padding" Value="0,0,0,0"/>
+                                                <Setter Property="MinWidth" Value="0" />
+                                                <Setter Property="MinHeight" Value="0" />
+                                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                                                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                                            </Style>
+                                        </GridView.ItemContainerStyle>
+                                        <GridView.ItemTemplate>
+                                            <DataTemplate x:DataType="data:Repair">
+                                                <StackPanel>
+                                                    <Grid Width="350">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="1.3*"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Margin="0,0,0,0" Grid.Column="0" >
+                                                            <TextBlock Name="TechNameTextBlock" Text="{Binding RefNumber}" Foreground="White" Style="{StaticResource NormalTextFont}"/>
+                                                        </StackPanel>
+                                                        <StackPanel Margin="0,0,0,0" Grid.Column="1" >
+                                                            <TextBlock x:Name="TechTotalTextBlock" Text="{Binding AGING}" Foreground="White" Style="{StaticResource NormalTextFont}"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridView.ItemTemplate>
+                                    </GridView>
+                                </StackPanel>
+                            </StackPanel>
+                            <Border Grid.Row="1" Height="200" Width="200"><!--Image Side-->
+                                <Image Name="ManufactureImage" Source="Assets/StoreLogo.png"/>
+                            </Border>
+                        </Grid>
+                    </Grid>
                 </StackPanel>
             </Grid>
         </StackPanel>
 
-        <StackPanel Grid.Column="1">
+        <StackPanel Grid.Column="1"><!--Right Side-->
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Prority Devies" Foreground="White" FontSize="18"/>
                 <TextBlock Name="PDPageTextBlock" Text="Page: 0/0" Margin="50,0,0,0" Foreground="White" FontSize="18"/>

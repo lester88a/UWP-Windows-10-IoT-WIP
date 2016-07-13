@@ -32,12 +32,15 @@ namespace WIP2UWP
     /// </summary>
     public sealed partial class MainPage : Page
     {
+        //instance variable for prority devices
         private ObservableCollection<Repair> Repairs;
+        //instance variable for back roder summary
+        private ObservableCollection<Repair> BackOrders;
         private int totalRows;
         private int pageSizePD = 20;
 
         //get data from json
-        private ObservableCollection<Repair> items;
+        private ObservableCollection<Repair> JsonData;
 
         public MainPage()
         {
@@ -60,7 +63,7 @@ namespace WIP2UWP
         private async Task GetPD()
         {
             //load repair data
-            items = await GetJsonRepair();
+            JsonData = await GetJsonRepair();
 
             //get total rows
             totalRows = GetTotalRowsPD();
@@ -70,7 +73,7 @@ namespace WIP2UWP
             //loop the prority devices
             for (int i = 0; i < (totalRows / pageSizePD)+1; i++)
             {
-                GetPriorityDevices(pageSizePD * i, pageSizePD);
+                DataManager(pageSizePD * i, pageSizePD);
                 await Task.Delay(10000);
             }
             //set progress ring Visible
@@ -94,11 +97,17 @@ namespace WIP2UWP
             var items = JsonConvert.DeserializeObject<ObservableCollection<Repair>>(jsonString);
             return items;
         }
-        //get priority devices
-        private void GetPriorityDevices(int skip, int take)
+        //Data manager
+        private void DataManager(int skip, int take)
         {
             //set progress ring Visible
             MyProgressRing.Visibility = Visibility.Visible;
+
+            /*---------------------------------------------------
+            * 
+            *-------------  Prority Devices Setion --------------
+            * 
+            * --------------------------------------------------*/
             //clear table of prority devices before loaded
             Repairs.Clear();
             //set current time
@@ -109,9 +118,8 @@ namespace WIP2UWP
             PDPageTextBlock.Text = "Page: " + (skip / pageSizePD + 1) + "/" + (totalRows / pageSizePD +1);
 
             //get data from json
-            //ObservableCollection<Repair> items = await GetJsonRepair();
             //using linq query to get priority devices for * manufacturer
-            var quesryPriority = (from i in items
+            var quesryPriority = (from i in JsonData
                                          where i.Manufacturer==("LG") && i.Warranty == true &&
                                          (i.Status == "R" || i.Status == "A" || i.Status == "J")
                                          orderby i.LastTechnician ascending, i.RefNumber ascending, i.AGING descending
@@ -147,37 +155,33 @@ namespace WIP2UWP
             //    });
             //}
 
+            /*---------------------------------------------------
+            * 
+            * ------------ BackOrder Summary Setion -------------
+            * 
+            * --------------------------------------------------*/
+
+
 
 
             //progress ring
             MyProgressRing.Visibility = Visibility.Collapsed;
 
         }
-
-
+        
         //get total rows for prority devices
         private int GetTotalRowsPD()
         {
-            //get json string
-            //ObservableCollection<Repair> items = await GetJsonRepair();
             //count total rows for prority devices
-            var prorityDeviecsRowsCount = (from i in items where i.Manufacturer==("LG") && i.Warranty==true && (i.Status == "R" || i.Status == "A" || i.Status == "J") select i).Count();
+            var prorityDeviecsRowsCount = (from i in JsonData where i.Manufacturer==("LG") && i.Warranty==true && (i.Status == "R" || i.Status == "A" || i.Status == "J") select i).Count();
             totalRows = Convert.ToInt32(prorityDeviecsRowsCount);
 
             return totalRows;
         }
-
-        //convert the date funtion
-        private string ConvertDate(string dateString)
-        {
-            //DateTime date = DateTime.ParseExact(dateString, "MMM dd", null);
-            //string date = dateString.ToString("dd-MM-yyyy");
-            DateTime dt = DateTime.Parse(dateString);
-            string s2 = dt.ToString("dd-MM");
-            DateTime dtnew = DateTime.Parse(s2);
-            return dtnew.ToString();
-        }
-
         
+
+
+
+
     }
 }
