@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -162,13 +163,36 @@ namespace WIP2UWP
         //get json string of table repair
         private async Task<ObservableCollection<Repair>> GetJsonRepair()
         {
-           
-            //initialize client to request JSON data
-            var client = new HttpClient();
-            //put request URL for JSON data
-            HttpResponseMessage response = await client.GetAsync(new Uri("http://10.1.200.111/repair.json"));
-            //get JsonString 
-            var jsonString = await response.Content.ReadAsStringAsync();
+            //default json string
+            string jsonString;
+            //validate url and make sure internet is connected
+            string myString = "http://10.1.200.111/repair.json";
+            Uri myUri;
+            if (Uri.TryCreate(myString, UriKind.RelativeOrAbsolute, out myUri) && IsConnectedToInternet())
+            {
+                //use the uri here
+                //initialize client to request JSON data
+                var client = new HttpClient();
+                //put request URL for JSON data
+                HttpResponseMessage response = await client.GetAsync(new Uri(myString));
+                //get JsonString from url
+                jsonString = await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                //default json string if there is no internet connection
+                jsonString = @"[{'RefNumber':3735137,
+                            'DealerID':132,
+                            'Manufacturer':'SAMSUNG',
+                            'FuturetelLocation':'SHIP',
+                            'Warranty':true,
+                            'Status':'C',
+                            'SVP':'TELUS',
+                            'LastTechnician':'FUN',
+                            'DateIn':'2016-02-02 14:58:00',
+                            'DateFinish':'2016-02-09 15:36:00',
+                            'AGING':162}]";
+            }
             //conver json string to json obejct
             var items = JsonConvert.DeserializeObject<ObservableCollection<Repair>>(jsonString);
             //progress ring
@@ -176,6 +200,17 @@ namespace WIP2UWP
 
             return items;
         }
+        //check internet connection
+        [DllImport("wininet.dll")]
+        private extern static bool InternetGetConnectedState(out int Description, int ReservedValue);
+
+        //Creating a function that uses the API function...
+        public static bool IsConnectedToInternet()
+        {
+            int Desc;
+            return InternetGetConnectedState(out Desc, 0);
+        }
+        
         //Data manager for prority devices
         private void DataManagerPD(int skip, int take)
         {

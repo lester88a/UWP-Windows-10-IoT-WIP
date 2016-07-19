@@ -134,14 +134,14 @@
                         <TextBlock Name="Age7RIAJTextBlock" Text="0" Grid.Row="4" Grid.Column="10" Style="{StaticResource OverallAgingRedTextFont}"/>
                         <TextBlock Name="Age8RIAJTextBlock" Text="0" Grid.Row="4" Grid.Column="11" Style="{StaticResource OverallAgingGoldTextFont}"/>
                         <TextBlock Text="Total" Grid.Row="5" Style="{StaticResource OverallAgingTextFont}" TextAlignment="Left"/>
-                        <TextBlock Name="Age0TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="1" Style="{StaticResource OverallAgingGreenTextFont}" Grid.ColumnSpan="3"/>
-                        <TextBlock Name="Age1TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="4" Style="{StaticResource OverallAgingGreenTextFont}"/>
-                        <TextBlock Name="Age2TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="5" Style="{StaticResource OverallAgingRedTextFont}"/>
-                        <TextBlock Name="Age3TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="6" Style="{StaticResource OverallAgingRedTextFont}"/>
-                        <TextBlock Name="Age4TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="7" Style="{StaticResource OverallAgingRedTextFont}"/>
-                        <TextBlock Name="Age5TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="8" Style="{StaticResource OverallAgingRedTextFont}"/>
-                        <TextBlock Name="Age6TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="9" Style="{StaticResource OverallAgingRedTextFont}"/>
-                        <TextBlock Name="Age7TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="10" Style="{StaticResource OverallAgingRedTextFont}"/>
+                        <TextBlock Name="Age0TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="1" Style="{StaticResource OverallAgingGoldTextFont}" Grid.ColumnSpan="3"/>
+                        <TextBlock Name="Age1TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="4" Style="{StaticResource OverallAgingGoldTextFont}"/>
+                        <TextBlock Name="Age2TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="5" Style="{StaticResource OverallAgingGoldTextFont}"/>
+                        <TextBlock Name="Age3TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="6" Style="{StaticResource OverallAgingGoldTextFont}"/>
+                        <TextBlock Name="Age4TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="7" Style="{StaticResource OverallAgingGoldTextFont}"/>
+                        <TextBlock Name="Age5TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="8" Style="{StaticResource OverallAgingGoldTextFont}"/>
+                        <TextBlock Name="Age6TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="9" Style="{StaticResource OverallAgingGoldTextFont}"/>
+                        <TextBlock Name="Age7TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="10" Style="{StaticResource OverallAgingGoldTextFont}"/>
                         <TextBlock Name="Age8TotalTextBlock" Text="0" Grid.Row="5" Grid.Column="11" Style="{StaticResource OverallAgingGoldTextFont}"/>
                     </Grid>
                 </StackPanel>
