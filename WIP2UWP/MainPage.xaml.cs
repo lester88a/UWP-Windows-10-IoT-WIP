@@ -50,7 +50,7 @@ namespace WIP2UWP
         private int pagePD;
         private int pageBK;
         //set manufacturer
-        private string Manufacturer = "LG";
+        private string Manufacturer = "SAMSUNG";
         
         public MainPage()
         {
@@ -165,40 +165,20 @@ namespace WIP2UWP
         {
             //default json string
             string jsonString;
-            //validate url and make sure internet is connected
-            string myString = "http://10.1.200.111/repair.json";
-            Uri myUri;
-            if (Uri.TryCreate(myString, UriKind.RelativeOrAbsolute, out myUri) && IsConnectedToInternet())
-            {
-                //use the uri here
-                //initialize client to request JSON data
-                var client = new HttpClient();
-                //put request URL for JSON data
-                HttpResponseMessage response = await client.GetAsync(new Uri(myString));
-                //get JsonString from url
-                jsonString = await response.Content.ReadAsStringAsync();
-            }
-            else
-            {
-                //default json string if there is no internet connection
-                jsonString = @"[{'RefNumber':3735137,
-                            'DealerID':132,
-                            'Manufacturer':'SAMSUNG',
-                            'FuturetelLocation':'SHIP',
-                            'Warranty':true,
-                            'Status':'C',
-                            'SVP':'TELUS',
-                            'LastTechnician':'FUN',
-                            'DateIn':'2016-02-02 14:58:00',
-                            'DateFinish':'2016-02-09 15:36:00',
-                            'AGING':162}]";
-            }
+
+            //initialize client to request JSON data
+            var client = new HttpClient();
+            //put request URL for JSON data
+            HttpResponseMessage response = await client.GetAsync(new Uri("http://sapc031:9090/json/repair.json"));
+            //get JsonString from url
+            jsonString = await response.Content.ReadAsStringAsync();
             //conver json string to json obejct
             var items = JsonConvert.DeserializeObject<ObservableCollection<Repair>>(jsonString);
             //progress ring
             MyProgressRing.Visibility = Visibility.Collapsed;
 
             return items;
+
         }
         //check internet connection
         [DllImport("wininet.dll")]
@@ -229,7 +209,7 @@ namespace WIP2UWP
             //get data from json
             //using linq query to get priority devices for * manufacturer
             var quesryPriority = (from i in JsonData
-                                         where i.Manufacturer==(Manufacturer) && i.Warranty == true &&
+                                         where i.Manufacturer==(Manufacturer) &&
                                          (i.Status == "R" || i.Status == "A" || i.Status == "J")
                                          orderby i.LastTechnician ascending, i.RefNumber ascending, i.AGING descending
                                          select i).Skip(skip).Take(take);
@@ -269,7 +249,7 @@ namespace WIP2UWP
         private int GetTotalRowsPD()
         {
             //count total rows for prority devices
-            var prorityDeviecsRowsCount = (from i in JsonData where i.Manufacturer==(Manufacturer) && i.Warranty==true && (i.Status == "R" || i.Status == "A" || i.Status == "J") select i).Count();
+            var prorityDeviecsRowsCount = (from i in JsonData where i.Manufacturer==(Manufacturer) && (i.Status == "R" || i.Status == "A" || i.Status == "J") select i).Count();
             totalRowsPD = Convert.ToInt32(prorityDeviecsRowsCount);
 
             return totalRowsPD;
@@ -345,7 +325,7 @@ namespace WIP2UWP
                                         where i.DateFinish >= dtCurrent &&
                                          i.Manufacturer == (Manufacturer) &&
                                          (i.Status != "X")
-                                        orderby i.RefNumber ascending, i.AGING descending
+                                        orderby i.AGING descending, i.LastTechnician
                                         select i;
             //useing linq query to get total outputs of each tech
             var groups = queryTechOutput.GroupBy(n => n.LastTechnician)
@@ -367,7 +347,7 @@ namespace WIP2UWP
                                where i.DateFinish >= dtCurrent &&
                                 i.Manufacturer == (Manufacturer) &&
                                 (i.Status != "X")
-                               orderby i.RefNumber ascending, i.AGING descending
+                               orderby i.AGING descending, i.LastTechnician
                                select i).Count();
             //assign the total output to the total label
             TechTotalOutputTextBlock.Text = "Total: " + totalOutput;
