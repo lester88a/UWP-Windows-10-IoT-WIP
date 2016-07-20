@@ -45,12 +45,15 @@ namespace WIP2UWP
 
         private int totalRowsPD;
         private int totalRowsBK;
+        private int totalRowsTech;
         private int pageSizePD = 20;
         private int pageSizeBK = 15;
+        private int pageSizeTech = 10;
         private int pagePD;
         private int pageBK;
+        private int pageTech;
         //set manufacturer
-        private string Manufacturer = "SAMSUNG";
+        private string Manufacturer = "LG";
         
         public MainPage()
         {
@@ -78,6 +81,8 @@ namespace WIP2UWP
             GetPD();
             //loop back order data
             GetBK();
+            //loop tech output data
+            GetTech();
         }
         //call load json data method
         private void LoadJson()
@@ -93,14 +98,12 @@ namespace WIP2UWP
                 MyProgressRing.Visibility = Visibility.Visible;
                 //load repair json data every x*60 seconds
                 JsonData = await GetJsonRepair();
-
-                //get tech output every x*60 seconds
-                DataManagerTech();
+                
                 //get all aging
                 DataManagerGetAllAging();
 
                 //wait for x minutes
-                await Task.Delay(1 * 60 * 1000); //x*60 seconds
+                await Task.Delay(2 * 60 * 1000); //x*60 seconds
             }
         }
 
@@ -122,7 +125,7 @@ namespace WIP2UWP
             for (int i = 0; i < pagePD; i++)
             {
                 DataManagerPD(pageSizePD * i, pageSizePD);
-                await Task.Delay(5000);
+                await Task.Delay(10000);
             }
            
             //load the method again to loop the method forever
@@ -153,13 +156,42 @@ namespace WIP2UWP
             for (int i = 0; i < pageBK; i++)
             {
                 DataManagerBK(pageSizeBK * i, pageSizeBK);
-                await Task.Delay(5000);
+                await Task.Delay(10000);
             }
 
             //load the method again to loop the method forever
             await GetDataBK();
         }
+        private async void GetTech()
+        {
+            await GetDataTech();
+        }
+        //get data method for tech
+        private async Task GetDataTech()
+        {
+            //get total rows for prority devices
+            totalRowsTech = GetTotalRowsTech();
+            Debug.WriteLine("totalRowsTech: " + totalRowsTech);
+            if ((totalRowsTech % pageSizeTech) != 0)
+            {
+                pageTech = (totalRowsTech / pageSizeTech) + 1;
+            }
+            else
+            {
+                pageTech = (totalRowsTech / pageSizeTech);
+            }
 
+            Debug.WriteLine("----------pagesTech: " + pageTech);
+            //loop the back order
+            for (int i = 0; i < pageTech; i++)
+            {
+                DataManagerTech(pageSizeTech * i, pageSizeTech);
+                await Task.Delay(10000);
+            }
+
+            //load the method again to loop the method forever
+            await GetDataTech();
+        }
         //get json string of table repair
         private async Task<ObservableCollection<Repair>> GetJsonRepair()
         {
@@ -168,8 +200,8 @@ namespace WIP2UWP
 
             //initialize client to request JSON data
             var client = new HttpClient();
-            //put request URL for JSON data
-            HttpResponseMessage response = await client.GetAsync(new Uri("http://sapc031:9090/json/repair.json"));
+            //put request URL for JSON data http://sapc031:9090/json/repair.json
+            HttpResponseMessage response = await client.GetAsync(new Uri("http://sapc031/json/repair.json"));
             //get JsonString from url
             jsonString = await response.Content.ReadAsStringAsync();
             //conver json string to json obejct
@@ -302,7 +334,7 @@ namespace WIP2UWP
 
 
         //Data manager for tech output
-        private void DataManagerTech()
+        private void DataManagerTech(int skip, int take)
         {
 
             /*---------------------------------------------------------------------------------------------------
@@ -321,16 +353,16 @@ namespace WIP2UWP
 
             //get data from json
             //using linq query to get finished output of current date for * manufacturer
-            var queryTechOutput = from i in JsonData
+            var queryTechOutput = (from i in JsonData
                                         where i.DateFinish >= dtCurrent &&
                                          i.Manufacturer == (Manufacturer) &&
                                          (i.Status != "X")
-                                        orderby i.AGING descending, i.LastTechnician
-                                        select i;
+                                        orderby i.AGING descending, i.LastTechnician ascending
+                                        select i);
             //useing linq query to get total outputs of each tech
-            var groups = queryTechOutput.GroupBy(n => n.LastTechnician)
+            var groups = (queryTechOutput.GroupBy(n => n.LastTechnician)
                 .Select(n => new{MetricName = n.Key,MetricCount = n.Count()})
-                .OrderByDescending(n => n.MetricCount);
+                .OrderByDescending(n => n.MetricCount)).Skip(skip).Take(take);
             /*---------------------------------------------------
              * This foreach loop is used for get all queried data
              * --------------------------------------------------*/
@@ -350,8 +382,20 @@ namespace WIP2UWP
                                orderby i.AGING descending, i.LastTechnician
                                select i).Count();
             //assign the total output to the total label
-            TechTotalOutputTextBlock.Text = "Total: " + totalOutput;
+            TechTotalOutputTextBlock.Text = "P: "+(skip / pageSizeTech + 1) + "/" + pageTech + "   Total: " + totalOutput;
+        }
+        //get total rows for tech
+        private int GetTotalRowsTech()
+        {
+            //set up current date format
+            string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
+            DateTime dtCurrent = DateTime.ParseExact(currentDate, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            //count total rows for tech
+            //var techOutputRowsCount = (from i in JsonData where i.DateFinish >= dtCurrent && i.Manufacturer == (Manufacturer) && (i.Status != "X") select i).Count();
+            var techTotalRow = ((from i in JsonData where i.DateFinish >= dtCurrent && i.Manufacturer == (Manufacturer) && (i.Status != "X") select i).GroupBy(x => x.LastTechnician).Select(x => x.First())).Count();
+            totalRowsTech = Convert.ToInt32(techTotalRow);
 
+            return totalRowsTech;
         }
 
         //Data manager for tech output
