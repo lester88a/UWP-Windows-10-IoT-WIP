@@ -92,6 +92,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .Net Framework and Windows SDK are automatically included -->
+    <EmbeddedResource Include="backup.json" />
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>

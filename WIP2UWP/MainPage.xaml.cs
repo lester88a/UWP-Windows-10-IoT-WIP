@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
@@ -53,7 +54,7 @@ namespace WIP2UWP
         private int pageBK;
         private int pageTech;
         //set manufacturer
-        private string Manufacturer = "LG";
+        private string Manufacturer = "SAMSUNG";
         
         public MainPage()
         {
@@ -70,20 +71,86 @@ namespace WIP2UWP
         //load main form
         private async void Grid_Loaded(object sender, RoutedEventArgs e)
         {
-            //set progress ring Visible
-            MyProgressRing.Visibility = Visibility.Visible;
 
-            //first to load the repair json data when application starts
-            JsonData = await GetJsonRepair();
-            //loop the loadJson method every X minutes
-            LoadJson();
-            //loop prority devices data
-            GetPD();
-            //loop back order data
-            GetBK();
-            //loop tech output data
-            GetTech();
+            if (await IsConnected())
+            {
+                //set progress ring Visible
+                MyProgressRing.Visibility = Visibility.Visible;
+                //first to load the repair json data when application starts
+                JsonData = await GetJsonRepair();
+                //loop the loadJson method every X minutes
+                LoadJson();
+                //loop prority devices data
+                GetPD();
+                ////loop back order data
+                GetBK();
+                ////loop tech output data
+                //GetTech();
+            }
+            else
+            {
+                //set progress ring Visible
+                MyProgressRing.Visibility = Visibility.Visible;
+
+                await Task.Delay(2 * 60 * 1000);
+                
+                //first to load the repair json data when application starts
+                JsonData = await GetJsonRepair();
+                //loop the loadJson method every X minutes
+                LoadJson();
+                //loop prority devices data
+                GetPD();
+                ////loop back order data
+                GetBK();
+                ////loop tech output data
+                //GetTech();
+            }
+            
         }
+
+        private async Task<bool> IsConnected()
+        {
+            string statusCode = "NOT FOUND";
+            //initialize client to request JSON data
+            var client = new HttpClient();
+            HttpResponseMessage response = null;
+            try
+            {
+                //put request URL for JSON data http://10.1.200.102/json/priority.json
+                response = await client.GetAsync(new Uri("http://10.1.200.102/json/priority.json"));
+                Debug.WriteLine("Status Code: " + response.StatusCode + "\n NET: " + IsConnectedToInternet());
+
+                if (response.StatusCode.ToString() == "OK")
+                {
+                    statusCode = response.StatusCode.ToString();
+                }
+                else
+                {
+                    statusCode = response.StatusCode.ToString();
+                }
+            }
+            catch (Exception)
+            {
+                statusCode = "NOT FOUND";
+            }
+
+            bool isConnected;
+
+            if (IsConnectedToInternet() && statusCode == "OK")
+            {
+                isConnected = true;
+                
+                StatusTextBlock.Text = "Online";
+            }
+            else
+            {
+                isConnected = false;
+                StatusTextBlock.Text = "Offline";
+            }
+            
+            return isConnected;
+        }
+
         //call load json data method
         private void LoadJson()
         {
@@ -94,14 +161,25 @@ namespace WIP2UWP
         {
             while (true)
             {
-                //set progress ring Visible
-                MyProgressRing.Visibility = Visibility.Visible;
-                //load repair json data every x*60 seconds
-                JsonData = await GetJsonRepair();
-                
-                //get all aging
-                DataManagerGetAllAging();
+                //check status and network before looping
+                if (await IsConnected())
+                {
+                    //set progress ring Visible
+                    MyProgressRing.Visibility = Visibility.Visible;
+                    //load repair json data every x*60 seconds
+                    JsonData = await GetJsonRepair();
 
+                    //get all aging
+                    DataManagerGetAllAging();
+
+                }
+                else
+                {
+                    //when is offline
+                    //set progress ring Visible
+                    MyProgressRing.Visibility = Visibility.Visible;
+                }
+                
                 //wait for x minutes
                 await Task.Delay(2 * 60 * 1000); //x*60 seconds
             }
@@ -111,21 +189,26 @@ namespace WIP2UWP
         {
             await GetDataPD();
         }
-        //get data method for prority devices
+        //get data method for priority devices
         private async Task GetDataPD()
         {
-            //get total rows for prority devices
-            totalRowsPD = GetTotalRowsPD();
-            Debug.WriteLine("totalRowsPD: " + totalRowsPD);
-            pagePD = (totalRowsPD / pageSizePD) + 1;
-            Debug.WriteLine("----------loopTimesPD: " + pagePD);
-            //set total rows and pages
-            PDTotalRowsTextBlock.Text = "Total: " + totalRowsPD;
-            //loop the prority devices
-            for (int i = 0; i < pagePD; i++)
+            if (await IsConnected())
             {
-                DataManagerPD(pageSizePD * i, pageSizePD);
-                await Task.Delay(10000);
+                //get total rows for priority devices
+                totalRowsPD = GetTotalRowsPD();
+                Debug.WriteLine("totalRowsPD: " + totalRowsPD);
+                pagePD = (totalRowsPD / pageSizePD) + 1;
+                Debug.WriteLine("----------loopTimesPD: " + pagePD);
+                //set total rows and pages
+                PDTotalRowsTextBlock.Text = "Total: " + totalRowsPD;
+
+                //loop the priority devices
+                for (int i = 0; i < pagePD; i++)
+                {
+                    DataManagerPD(pageSizePD * i, pageSizePD);
+
+                    await Task.Delay(10000);
+                }
             }
            
             //load the method again to loop the method forever
@@ -139,26 +222,33 @@ namespace WIP2UWP
         //get data method for back order
         private async Task GetDataBK()
         {
-            //get total rows for prority devices
-            totalRowsBK = GetTotalRowsBK();
-            Debug.WriteLine("totalRowsBK: " + totalRowsBK);
-            if ((totalRowsBK % pageSizeBK)!=0)
+            if (await IsConnected())
             {
-                pageBK = (totalRowsBK / pageSizeBK) + 1;
-            }
-            else
-            {
-                pageBK = (totalRowsBK / pageSizeBK);
-            }
-            
-            Debug.WriteLine("----------pagesBK: " + pageBK);
-            //loop the back order
-            for (int i = 0; i < pageBK; i++)
-            {
-                DataManagerBK(pageSizeBK * i, pageSizeBK);
-                await Task.Delay(10000);
+                //get total rows for prority devices
+                totalRowsBK = GetTotalRowsBK();
+                Debug.WriteLine("totalRowsBK: " + totalRowsBK);
+                if ((totalRowsBK % pageSizeBK) != 0)
+                {
+                    pageBK = (totalRowsBK / pageSizeBK) + 1;
+                }
+                else
+                {
+                    pageBK = (totalRowsBK / pageSizeBK);
+                }
+
+                Debug.WriteLine("----------pagesBK: " + pageBK);
+
+
+                //loop the back order
+                for (int i = 0; i < pageBK; i++)
+                {
+                    DataManagerBK(pageSizeBK * i, pageSizeBK);
+
+                    await Task.Delay(10000);
+                }
             }
 
+            
             //load the method again to loop the method forever
             await GetDataBK();
         }
@@ -169,25 +259,33 @@ namespace WIP2UWP
         //get data method for tech
         private async Task GetDataTech()
         {
-            //get total rows for prority devices
-            totalRowsTech = GetTotalRowsTech();
-            Debug.WriteLine("totalRowsTech: " + totalRowsTech);
-            if ((totalRowsTech % pageSizeTech) != 0)
+            if (await IsConnected())
             {
-                pageTech = (totalRowsTech / pageSizeTech) + 1;
-            }
-            else
-            {
-                pageTech = (totalRowsTech / pageSizeTech);
+                //get total rows for prority devices
+                totalRowsTech = GetTotalRowsTech();
+                Debug.WriteLine("totalRowsTech: " + totalRowsTech);
+                if ((totalRowsTech % pageSizeTech) != 0)
+                {
+                    pageTech = (totalRowsTech / pageSizeTech) + 1;
+                }
+                else
+                {
+                    pageTech = (totalRowsTech / pageSizeTech);
+                }
+
+                Debug.WriteLine("----------pagesTech: " + pageTech);
+
+
+                //loop the back order
+                for (int i = 0; i < pageTech; i++)
+                {
+                    DataManagerTech(pageSizeTech * i, pageSizeTech);
+
+                    await Task.Delay(10000);
+                }
+
             }
 
-            Debug.WriteLine("----------pagesTech: " + pageTech);
-            //loop the back order
-            for (int i = 0; i < pageTech; i++)
-            {
-                DataManagerTech(pageSizeTech * i, pageSizeTech);
-                await Task.Delay(10000);
-            }
 
             //load the method again to loop the method forever
             await GetDataTech();
@@ -197,13 +295,39 @@ namespace WIP2UWP
         {
             //default json string
             string jsonString;
-
+            string statusCode = "NOT FOUND";
             //initialize client to request JSON data
             var client = new HttpClient();
-            //put request URL for JSON data http://sapc031:9090/json/repair.json
-            HttpResponseMessage response = await client.GetAsync(new Uri("http://sapc031/json/repair.json"));
-            //get JsonString from url
-            jsonString = await response.Content.ReadAsStringAsync();
+            HttpResponseMessage response = null;
+            try
+            {
+                //put request URL for JSON data http://10.1.200.102/json/priority.json
+                response = await client.GetAsync(new Uri("http://10.1.200.102/json/priority.json"));
+                Debug.WriteLine("StatusCode: " + response.StatusCode + "\nNET: " + IsConnectedToInternet());
+
+                if (response.StatusCode.ToString() == "OK")
+                {
+                    statusCode = response.StatusCode.ToString();
+                }
+                else
+                {
+                    statusCode = response.StatusCode.ToString();
+                }
+            }
+            catch (Exception)
+            {
+                statusCode = "NOT FOUND";
+            }
+            
+            if (statusCode == "OK")
+            {
+                //get JsonString from url
+                jsonString = await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                jsonString = "[{'RefNumber':3939519,'DealerID':4358,'Manufacturer':'LG','FuturetelLocation':'SHIP','Warranty':true,'Status':'C','SVP':'ROGERS','LastTechnician':'SARAH','DateIn':'2016-09-01 09:15:00','DateFinish':'2016-09-03 09:53:00','AGING':27},{'RefNumber':3939525,'DealerID':7344,'Manufacturer':'SAMSUNG','FuturetelLocation':'SHIP','Warranty':true,'Status':'C','SVP':'WIND','LastTechnician':'DRAGAN','DateIn':'2016-09-01 09:17:00','DateFinish':'2016-09-02 14:13:00','AGING':27}]";
+            }
             //conver json string to json obejct
             var items = JsonConvert.DeserializeObject<ObservableCollection<Repair>>(jsonString);
             //progress ring
@@ -399,202 +523,213 @@ namespace WIP2UWP
         }
 
         //Data manager for tech output
-        private void DataManagerGetAllAging()
+        private async void DataManagerGetAllAging()
         {
-            //using linq query to get queried aging of current date for * manufacturer
-            //status B
-            Age0BTextBlock.Text = (from i in JsonData
-                        where i.AGING == 0 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
-                        orderby i.AGING descending select i.AGING).Count().ToString();
-            Age1BTextBlock.Text = (from i in JsonData
-                         where i.AGING == 1 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
-                         orderby i.AGING descending
-                         select i.AGING).Count().ToString();
-            Age2BTextBlock.Text = (from i in JsonData
-                         where i.AGING == 2 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
-                         orderby i.AGING descending
-                         select i.AGING).Count().ToString();
-            Age3BTextBlock.Text = (from i in JsonData
-                         where i.AGING == 3 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
-                         orderby i.AGING descending
-                         select i.AGING).Count().ToString();
-            Age4BTextBlock.Text = (from i in JsonData
-                         where i.AGING == 4 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
-                         orderby i.AGING descending
-                         select i.AGING).Count().ToString();
-            Age5BTextBlock.Text = (from i in JsonData
-                         where i.AGING == 5 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
-                         orderby i.AGING descending
-                         select i.AGING).Count().ToString();
-            Age6BTextBlock.Text = (from i in JsonData
-                         where i.AGING >= 6 && i.AGING <= 29 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
-                         orderby i.AGING descending
-                         select i.AGING).Count().ToString();
-            Age7BTextBlock.Text = (from i in JsonData
-                         where i.AGING >= 30 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
-                         orderby i.AGING descending
-                         select i.AGING).Count().ToString();
-            Age8BTextBlock.Text = (from i in JsonData
-                                   where i.AGING >= 0 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
-                                   orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            //status E
-            Age0ETextBlock.Text = (from i in JsonData
-                                   where i.AGING == 0 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
-                                   orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age1ETextBlock.Text = (from i in JsonData
-                                   where i.AGING == 1 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
-                                   orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age2ETextBlock.Text = (from i in JsonData
-                                   where i.AGING == 2 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
-                                   orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age3ETextBlock.Text = (from i in JsonData
-                                   where i.AGING == 3 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
-                                   orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age4ETextBlock.Text = (from i in JsonData
-                                   where i.AGING == 4 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
-                                   orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age5ETextBlock.Text = (from i in JsonData
-                                   where i.AGING == 5 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
-                                   orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age6ETextBlock.Text = (from i in JsonData
-                                   where i.AGING >= 6 && i.AGING <= 29 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
-                                   orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age7ETextBlock.Text = (from i in JsonData
-                                   where i.AGING >= 30 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
-                                   orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age8ETextBlock.Text = (from i in JsonData
-                                   where i.AGING >= 0 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
-                                   orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
+            try
+            {
+                if (await IsConnected())
+                {
+                    //using linq query to get queried aging of current date for * manufacturer
+                    //status B
+                    Age0BTextBlock.Text = (from i in JsonData
+                                           where i.AGING == 0 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age1BTextBlock.Text = (from i in JsonData
+                                           where i.AGING == 1 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age2BTextBlock.Text = (from i in JsonData
+                                           where i.AGING == 2 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age3BTextBlock.Text = (from i in JsonData
+                                           where i.AGING == 3 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age4BTextBlock.Text = (from i in JsonData
+                                           where i.AGING == 4 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age5BTextBlock.Text = (from i in JsonData
+                                           where i.AGING == 5 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age6BTextBlock.Text = (from i in JsonData
+                                           where i.AGING >= 6 && i.AGING <= 29 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age7BTextBlock.Text = (from i in JsonData
+                                           where i.AGING >= 30 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age8BTextBlock.Text = (from i in JsonData
+                                           where i.AGING >= 0 && i.Manufacturer == (Manufacturer) && (i.Status == "B")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    //status E
+                    Age0ETextBlock.Text = (from i in JsonData
+                                           where i.AGING == 0 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age1ETextBlock.Text = (from i in JsonData
+                                           where i.AGING == 1 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age2ETextBlock.Text = (from i in JsonData
+                                           where i.AGING == 2 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age3ETextBlock.Text = (from i in JsonData
+                                           where i.AGING == 3 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age4ETextBlock.Text = (from i in JsonData
+                                           where i.AGING == 4 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age5ETextBlock.Text = (from i in JsonData
+                                           where i.AGING == 5 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age6ETextBlock.Text = (from i in JsonData
+                                           where i.AGING >= 6 && i.AGING <= 29 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age7ETextBlock.Text = (from i in JsonData
+                                           where i.AGING >= 30 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
+                    Age8ETextBlock.Text = (from i in JsonData
+                                           where i.AGING >= 0 && i.Manufacturer == (Manufacturer) && (i.Status == "E")
+                                           orderby i.AGING descending
+                                           select i.AGING).Count().ToString();
 
-            //status RI
-            Age0RITextBlock.Text = (from i in JsonData
-                                   where i.AGING == 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty==true)
-                                   orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age1RITextBlock.Text = (from i in JsonData
-                                   where i.AGING == 1 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
-                                    orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age2RITextBlock.Text = (from i in JsonData
-                                   where i.AGING == 2 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
-                                    orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age3RITextBlock.Text = (from i in JsonData
-                                   where i.AGING == 3 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
-                                    orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age4RITextBlock.Text = (from i in JsonData
-                                   where i.AGING == 4 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
-                                    orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age5RITextBlock.Text = (from i in JsonData
-                                   where i.AGING == 5 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
-                                    orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age6RITextBlock.Text = (from i in JsonData
-                                   where i.AGING >= 6 && i.AGING <= 29 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
-                                    orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age7RITextBlock.Text = (from i in JsonData
-                                   where i.AGING >= 30 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
-                                    orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
-            Age8RITextBlock.Text = (from i in JsonData
-                                   where i.AGING >= 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
-                                    orderby i.AGING descending
-                                   select i.AGING).Count().ToString();
+                    //status RI
+                    Age0RITextBlock.Text = (from i in JsonData
+                                            where i.AGING == 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
+                                            orderby i.AGING descending
+                                            select i.AGING).Count().ToString();
+                    Age1RITextBlock.Text = (from i in JsonData
+                                            where i.AGING == 1 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
+                                            orderby i.AGING descending
+                                            select i.AGING).Count().ToString();
+                    Age2RITextBlock.Text = (from i in JsonData
+                                            where i.AGING == 2 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
+                                            orderby i.AGING descending
+                                            select i.AGING).Count().ToString();
+                    Age3RITextBlock.Text = (from i in JsonData
+                                            where i.AGING == 3 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
+                                            orderby i.AGING descending
+                                            select i.AGING).Count().ToString();
+                    Age4RITextBlock.Text = (from i in JsonData
+                                            where i.AGING == 4 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
+                                            orderby i.AGING descending
+                                            select i.AGING).Count().ToString();
+                    Age5RITextBlock.Text = (from i in JsonData
+                                            where i.AGING == 5 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
+                                            orderby i.AGING descending
+                                            select i.AGING).Count().ToString();
+                    Age6RITextBlock.Text = (from i in JsonData
+                                            where i.AGING >= 6 && i.AGING <= 29 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
+                                            orderby i.AGING descending
+                                            select i.AGING).Count().ToString();
+                    Age7RITextBlock.Text = (from i in JsonData
+                                            where i.AGING >= 30 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
+                                            orderby i.AGING descending
+                                            select i.AGING).Count().ToString();
+                    Age8RITextBlock.Text = (from i in JsonData
+                                            where i.AGING >= 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "N") && (i.Warranty == true)
+                                            orderby i.AGING descending
+                                            select i.AGING).Count().ToString();
 
-            //status RIAJ
-            Age0RIAJTextBlock.Text = (from i in JsonData
-                                    where i.AGING == 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
-                                      orderby i.AGING descending
-                                    select i.AGING).Count().ToString();
-            Age1RIAJTextBlock.Text = (from i in JsonData
-                                    where i.AGING == 1 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
-                                      orderby i.AGING descending
-                                    select i.AGING).Count().ToString();
-            Age2RIAJTextBlock.Text = (from i in JsonData
-                                    where i.AGING == 2 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
-                                      orderby i.AGING descending
-                                    select i.AGING).Count().ToString();
-            Age3RIAJTextBlock.Text = (from i in JsonData
-                                    where i.AGING == 3 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
-                                      orderby i.AGING descending
-                                    select i.AGING).Count().ToString();
-            Age4RIAJTextBlock.Text = (from i in JsonData
-                                    where i.AGING == 4 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
-                                      orderby i.AGING descending
-                                    select i.AGING).Count().ToString();
-            Age5RIAJTextBlock.Text = (from i in JsonData
-                                    where i.AGING == 5 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
-                                      orderby i.AGING descending
-                                    select i.AGING).Count().ToString();
-            Age6RIAJTextBlock.Text = (from i in JsonData
-                                    where i.AGING >= 6 && i.AGING <= 29 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
-                                    orderby i.AGING descending
-                                    select i.AGING).Count().ToString();
-            Age7RIAJTextBlock.Text = (from i in JsonData
-                                    where i.AGING >= 30 && i.Manufacturer == (Manufacturer) && (i.Status == "R" ||  i.Status == "I"  ||  i.Status == "A"  ||  i.Status == "J") && (i.Warranty == false)
-                                    orderby i.AGING descending
-                                    select i.AGING).Count().ToString();
-            Age8RIAJTextBlock.Text = (from i in JsonData
-                                    where i.AGING >= 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" ||  i.Status == "I"  ||  i.Status == "A" || i.Status == "J") && (i.Warranty == false)
-                                    orderby i.AGING descending
-                                    select i.AGING).Count().ToString();
+                    //status RIAJ
+                    Age0RIAJTextBlock.Text = (from i in JsonData
+                                              where i.AGING == 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
+                                              orderby i.AGING descending
+                                              select i.AGING).Count().ToString();
+                    Age1RIAJTextBlock.Text = (from i in JsonData
+                                              where i.AGING == 1 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
+                                              orderby i.AGING descending
+                                              select i.AGING).Count().ToString();
+                    Age2RIAJTextBlock.Text = (from i in JsonData
+                                              where i.AGING == 2 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
+                                              orderby i.AGING descending
+                                              select i.AGING).Count().ToString();
+                    Age3RIAJTextBlock.Text = (from i in JsonData
+                                              where i.AGING == 3 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
+                                              orderby i.AGING descending
+                                              select i.AGING).Count().ToString();
+                    Age4RIAJTextBlock.Text = (from i in JsonData
+                                              where i.AGING == 4 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
+                                              orderby i.AGING descending
+                                              select i.AGING).Count().ToString();
+                    Age5RIAJTextBlock.Text = (from i in JsonData
+                                              where i.AGING == 5 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
+                                              orderby i.AGING descending
+                                              select i.AGING).Count().ToString();
+                    Age6RIAJTextBlock.Text = (from i in JsonData
+                                              where i.AGING >= 6 && i.AGING <= 29 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
+                                              orderby i.AGING descending
+                                              select i.AGING).Count().ToString();
+                    Age7RIAJTextBlock.Text = (from i in JsonData
+                                              where i.AGING >= 30 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
+                                              orderby i.AGING descending
+                                              select i.AGING).Count().ToString();
+                    Age8RIAJTextBlock.Text = (from i in JsonData
+                                              where i.AGING >= 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J") && (i.Warranty == false)
+                                              orderby i.AGING descending
+                                              select i.AGING).Count().ToString();
 
-            //status total
-            Age0TotalTextBlock.Text = (from i in JsonData
-                                      where i.AGING == 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
-                                      orderby i.AGING descending
-                                      select i.AGING).Count().ToString();
-            Age1TotalTextBlock.Text = (from i in JsonData
-                                      where i.AGING == 1 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
-                                      orderby i.AGING descending
-                                      select i.AGING).Count().ToString();
-            Age2TotalTextBlock.Text = (from i in JsonData
-                                      where i.AGING == 2 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
-                                      orderby i.AGING descending
-                                      select i.AGING).Count().ToString();
-            Age3TotalTextBlock.Text = (from i in JsonData
-                                      where i.AGING == 3 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
-                                      orderby i.AGING descending
-                                      select i.AGING).Count().ToString();
-            Age4TotalTextBlock.Text = (from i in JsonData
-                                      where i.AGING == 4 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
-                                      orderby i.AGING descending
-                                      select i.AGING).Count().ToString();
-            Age5TotalTextBlock.Text = (from i in JsonData
-                                      where i.AGING == 5 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
-                                      orderby i.AGING descending
-                                      select i.AGING).Count().ToString();
-            Age6TotalTextBlock.Text = (from i in JsonData
-                                      where i.AGING >= 6 && i.AGING <= 29 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
-                                      orderby i.AGING descending
-                                      select i.AGING).Count().ToString();
-            Age7TotalTextBlock.Text = (from i in JsonData
-                                      where i.AGING >= 30 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
-                                      orderby i.AGING descending
-                                      select i.AGING).Count().ToString();
-            Age8TotalTextBlock.Text = (from i in JsonData
-                                      where i.AGING >= 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
-                                      orderby i.AGING descending
-                                      select i.AGING).Count().ToString();
+                    //status total
+                    Age0TotalTextBlock.Text = (from i in JsonData
+                                               where i.AGING == 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
+                                               orderby i.AGING descending
+                                               select i.AGING).Count().ToString();
+                    Age1TotalTextBlock.Text = (from i in JsonData
+                                               where i.AGING == 1 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
+                                               orderby i.AGING descending
+                                               select i.AGING).Count().ToString();
+                    Age2TotalTextBlock.Text = (from i in JsonData
+                                               where i.AGING == 2 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
+                                               orderby i.AGING descending
+                                               select i.AGING).Count().ToString();
+                    Age3TotalTextBlock.Text = (from i in JsonData
+                                               where i.AGING == 3 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
+                                               orderby i.AGING descending
+                                               select i.AGING).Count().ToString();
+                    Age4TotalTextBlock.Text = (from i in JsonData
+                                               where i.AGING == 4 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
+                                               orderby i.AGING descending
+                                               select i.AGING).Count().ToString();
+                    Age5TotalTextBlock.Text = (from i in JsonData
+                                               where i.AGING == 5 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
+                                               orderby i.AGING descending
+                                               select i.AGING).Count().ToString();
+                    Age6TotalTextBlock.Text = (from i in JsonData
+                                               where i.AGING >= 6 && i.AGING <= 29 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
+                                               orderby i.AGING descending
+                                               select i.AGING).Count().ToString();
+                    Age7TotalTextBlock.Text = (from i in JsonData
+                                               where i.AGING >= 30 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
+                                               orderby i.AGING descending
+                                               select i.AGING).Count().ToString();
+                    Age8TotalTextBlock.Text = (from i in JsonData
+                                               where i.AGING >= 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
+                                               orderby i.AGING descending
+                                               select i.AGING).Count().ToString();
 
-            //grant total
-            OverallAgingTotalTextBlock.Text = "Total: " + (from i in JsonData
-                                                           where i.AGING >= 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
-                                                           orderby i.AGING descending
-                                                           select i.AGING).Count().ToString();
+                    //grant total
+                    OverallAgingTotalTextBlock.Text = "Total: " + (from i in JsonData
+                                                                   where i.AGING >= 0 && i.Manufacturer == (Manufacturer) && (i.Status == "R" || i.Status == "I" || i.Status == "A" || i.Status == "J" || i.Status == "B" || i.Status == "E" || i.Status == "N")
+                                                                   orderby i.AGING descending
+                                                                   select i.AGING).Count().ToString();
+                }
+            }
+            catch (Exception)
+            {
+                StatusTextBlock.Text = "Error";
+            }
 
         }
 

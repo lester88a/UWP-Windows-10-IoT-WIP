@@ -305,7 +305,7 @@
                             <Border Grid.Row="1" Height="150" Width="150">
                                 <!--Image Side-->
                                 <Grid>
-                                    <Image Name="ManufactureImage" Source="Images/lg.png"/>
+                                    <Image Name="ManufactureImage" Source="Images/samsung.png"/>
                                     <ProgressRing Name="MyProgressRing"
                                                   Margin="0,0,0,0" 
                                                   HorizontalAlignment="Center"
@@ -313,6 +313,7 @@
                                                   Width="50" 
                                                   Height="50" Foreground="Red"
                                                   IsActive="True" />
+                                    <TextBlock Name="StatusTextBlock" Foreground="White" Style="{StaticResource NormalTextFont}" Text="Online" FontSize="12"/>
                                 </Grid>
                             </Border>
                         </Grid>
@@ -324,7 +325,7 @@
         <StackPanel Grid.Column="1">
             <!--Right Side-->
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Prority Devies" Foreground="White" FontSize="18"/>
+                <TextBlock Text="Priority Devices" Foreground="White" FontSize="18"/>
                 <TextBlock Name="PDPageTextBlock" Text="Page: 0/0" Margin="50,0,0,0" Foreground="White" FontSize="18"/>
                 <TextBlock Name="PDTotalRowsTextBlock" Text="Total: 0" Margin="50,0,0,0" Foreground="White" FontSize="18"/>
                 <TextBlock Name="DigitalClockTextBlock" Text="2000-01-01 12:00AM" Margin="50,0,0,0" Foreground="White" FontSize="18" TextAlignment="Right"/>
